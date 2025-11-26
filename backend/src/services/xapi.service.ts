@@ -13,9 +13,9 @@ export class XAPIService {
   }
 
   // Generate OAuth 2.0 authorization URL
-  generateAuthUrl(state: string): string {
-    const codeVerifier = this.generateCodeVerifier();
-    const codeChallenge = this.generateCodeChallenge(codeVerifier);
+  generateAuthUrl(state: string, codeVerifier?: string): string {
+    const verifier = codeVerifier || this.generateCodeVerifier();
+    const codeChallenge = this.generateCodeChallenge(verifier);
 
     const params = new URLSearchParams({
       response_type: 'code',

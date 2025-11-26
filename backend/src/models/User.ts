@@ -36,6 +36,19 @@ const userSchema = new Schema<IUser>(
       enum: ['admin', 'user'],
       default: 'user',
     },
+    xUserId: {
+      type: String,
+      sparse: true, // Allow null/undefined but ensure uniqueness when present
+      unique: true,
+    },
+    displayName: {
+      type: String,
+      trim: true,
+    },
+    profileImageUrl: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

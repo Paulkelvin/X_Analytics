@@ -27,7 +27,7 @@ export const initiateXAuth = async (req: AuthRequest, res: Response) => {
     });
 
     // Generate authorization URL
-    const authUrl = xApiService.generateAuthUrl(state);
+    const authUrl = xApiService.generateAuthUrl(state, codeVerifier);
 
     res.json({
       authUrl,
