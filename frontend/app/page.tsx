@@ -37,7 +37,7 @@ export default function Home() {
               and monitor your growth with powerful analytics tools.
             </p>
             <p className="text-sm text-blue-600 dark:text-blue-400 mt-4 font-medium">
-              🚀 Sign in with X → Instant analytics → No registration needed!
+              🚀 Sign in with X → Instant analytics → No registration needed
             </p>
           </div>
 
