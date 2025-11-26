@@ -41,38 +41,47 @@ export const initiateXAuth = async (req: AuthRequest, res: Response) => {
 
 export const handleXCallback = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('X callback received:', { code: !!req.query.code, state: !!req.query.state });
+
     const { code, state } = req.query;
 
     if (!code || !state) {
+      console.error('Missing code or state:', { code: !!code, state: !!state });
       return res.status(400).json({ error: 'Missing authorization code or state' });
     }
 
     // Verify state
     const storedState = oauthStates.get(state as string);
     if (!storedState) {
+      console.error('Invalid state:', state);
       return res.status(400).json({ error: 'Invalid or expired state' });
     }
 
     // Check expiration
     if (Date.now() > storedState.expiresAt) {
       oauthStates.delete(state as string);
+      console.error('State expired:', state);
       return res.status(400).json({ error: 'State expired' });
     }
 
     const { userId, codeVerifier } = storedState;
+    console.log('Stored state found, proceeding with token exchange');
 
     // Exchange code for access token
     const tokenData = await xApiService.getAccessToken(code as string, codeVerifier);
+    console.log('Token exchange successful');
 
     // Get user profile
     const profile = await xApiService.getUserProfile(tokenData.access_token);
+    console.log('Profile fetched:', { id: profile.id, username: profile.username });
 
     // Calculate token expiration
     const tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
     // Find or create user based on X account
     let user = await User.findOne({ xUserId: profile.id });
-    
+    console.log('User lookup result:', !!user);
+
     if (!user) {
       // Auto-create user from X profile
       user = await User.create({
@@ -84,6 +93,7 @@ export const handleXCallback = async (req: AuthRequest, res: Response) => {
         profileImageUrl: profile.profile_image_url,
         role: 'user',
       });
+      console.log('New user created:', user._id);
     }
 
     const newUserId = user._id.toString();
@@ -91,6 +101,7 @@ export const handleXCallback = async (req: AuthRequest, res: Response) => {
 
     // Check if X account already exists
     let xAccount = await XAccount.findOne({ xUserId: profile.id });
+    console.log('X account lookup result:', !!xAccount);
 
     if (xAccount) {
       // Update existing account
@@ -104,6 +115,7 @@ export const handleXCallback = async (req: AuthRequest, res: Response) => {
       xAccount.followersCount = profile.public_metrics?.followers_count || 0;
       xAccount.followingCount = profile.public_metrics?.following_count || 0;
       await xAccount.save();
+      console.log('X account updated');
     } else {
       // Create new X account
       xAccount = await XAccount.create({
@@ -118,20 +130,30 @@ export const handleXCallback = async (req: AuthRequest, res: Response) => {
         followersCount: profile.public_metrics?.followers_count || 0,
         followingCount: profile.public_metrics?.following_count || 0,
       });
+      console.log('X account created');
+    }
+
+    // Check JWT_SECRET
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET not found in environment variables');
+      return res.status(500).json({ error: 'Server configuration error' });
     }
 
     // Generate JWT token for the user
     const appToken = jwt.sign(
       { id: newUserId, username: user.username },
-      process.env.JWT_SECRET!,
+      jwtSecret,
       { expiresIn: '7d' }
     );
+    console.log('JWT token generated');
 
     // Clean up state
     oauthStates.delete(state as string);
 
     // Redirect to frontend with token
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    console.log('Redirecting to:', `${frontendUrl}/auth/callback?token=${appToken}&connected=true`);
     res.redirect(`${frontendUrl}/auth/callback?token=${appToken}&connected=true`);
   } catch (error) {
     console.error('Handle X callback error:', error);

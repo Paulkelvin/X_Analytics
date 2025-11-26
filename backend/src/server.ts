@@ -74,8 +74,19 @@ if (process.env.NODE_ENV !== 'production') {
   
   startServer();
 } else {
-  // For Vercel serverless - connect on first request
-  connectDB().catch(console.error);
+  // For Vercel serverless - connect on first request and validate env vars
+  console.log('🌍 Vercel serverless environment detected');
+  console.log('Environment check:');
+  console.log('- JWT_SECRET:', !!process.env.JWT_SECRET);
+  console.log('- MONGODB_URI:', !!process.env.MONGODB_URI);
+  console.log('- X_API_CLIENT_ID:', !!process.env.X_API_CLIENT_ID);
+  console.log('- X_API_CLIENT_SECRET:', !!process.env.X_API_CLIENT_SECRET);
+  console.log('- X_API_CALLBACK_URL:', !!process.env.X_API_CALLBACK_URL);
+  console.log('- FRONTEND_URL:', !!process.env.FRONTEND_URL);
+
+  connectDB().catch((error) => {
+    console.error('❌ Database connection failed in serverless:', error);
+  });
 }
 
 // Export the app for serverless
