@@ -9,7 +9,8 @@ export default function Home() {
     try {
       setLoading(true);
       // Get OAuth URL from backend
-      const response = await fetch('http://localhost:5000/api/auth/x/authorize');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/auth/x/authorize`);
       const data = await response.json();
       
       // Redirect to X OAuth
