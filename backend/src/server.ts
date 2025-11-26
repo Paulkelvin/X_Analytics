@@ -39,22 +39,44 @@ app.get('/health', (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-// Database connection and server start
-const startServer = async () => {
+// Database connection for serverless
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) {
+    return;
+  }
   try {
     await connectDatabase();
+    isConnected = true;
     console.log('✅ MongoDB connected successfully');
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    console.error('❌ Unable to start server:', error);
-    process.exit(1);
+    console.error('❌ Unable to connect to database:', error);
+    throw error;
   }
 };
 
-startServer();
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const startServer = async () => {
+    try {
+      await connectDB();
+      
+      app.listen(PORT, () => {
+        console.log(`🚀 Server is running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
+    } catch (error) {
+      console.error('❌ Unable to start server:', error);
+      process.exit(1);
+    }
+  };
+  
+  startServer();
+}
 
-export default app;
+// For Vercel serverless
+export default async (req: any, res: any) => {
+  await connectDB();
+  return app(req, res);
+};
