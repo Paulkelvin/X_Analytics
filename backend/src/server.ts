@@ -73,10 +73,11 @@ if (process.env.NODE_ENV !== 'production') {
   };
   
   startServer();
+} else {
+  // For Vercel serverless - connect on first request
+  connectDB().catch(console.error);
 }
 
-// For Vercel serverless
-export default async (req: any, res: any) => {
-  await connectDB();
-  return app(req, res);
-};
+// Export the app for serverless
+module.exports = app;
+export default app;
