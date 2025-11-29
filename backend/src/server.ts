@@ -15,11 +15,23 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - Allow all origins for now
+// Middleware - CORS configuration for Vercel
 app.use(cors({
-  origin: '*',
-  credentials: false
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins for development and production
+    return callback(null, true);
+  },
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
